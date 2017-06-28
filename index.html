@@ -1,150 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-        <title>Nanopool 帳號狀態</title>
-        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/semantic.min.css">
-    </head>
-    <body>
-        <div class="ui fluid container"
-             style="padding-top: 20px;padding-left: 5vw!important;padding-right: 5vw!important;" id="container">
-            <h1 class="ui header center aligned">Nanopool 帳號狀態</h1>
-            <div class="ui pointing secondary menu" id="tabMenu">
-            </div>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Nanopool 帳號狀態</title>
+    <link rel="stylesheet" href="css/semantic.min.css">
+</head>
+<body>
+<div class="ui fluid container"
+     style="padding-top: 20px;padding-left: 5vw!important;padding-right: 5vw!important;" id="container">
+    <h1 class="ui header center aligned">Nanopool 帳號狀態</h1>
+    <div class="ui pointing secondary menu" id="tabMenu">
+    </div>
 
-        </div>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/semantic.min.js"></script>
-        <script>
-            let addresses = [], apis = [];
-            let env = $.getJSON("env.json", function (data) {
-                console.log("Loading")
-            }).done((data) => {
-                for (let i in data["address"]) {
-                    if (data["address"].hasOwnProperty(i) && data["address"][i] !== "") {
-                        addresses[i] = data["address"][i];
-                        apis[i] = data["api"][i].replace(":address", addresses[i]);
-                    }
-                }
-                let counter = 0;
-                let container = $("#container");
-                let tabMenu = $("#tabMenu");
-                for (let i in addresses) {
-                    if (addresses.hasOwnProperty(i) && addresses[i] !== "") {
-                        tabMenu.append([
-                            '<a class="', counter === 0 ? "active " : "", 'item" data-tab="', i, '">', i.toUpperCase(), '</a>'
+</div>
+<script src="js/jquery.min.js"></script>
+<script src="js/semantic.min.js"></script>
+<script>
+    let addresses = [];
+    let env = $.getJSON("env.json", function (data) {
+        console.log("Loading")
+    }).done((data) => {
+        for (let i in data["address"]) {
+            if (data["address"].hasOwnProperty(i) && data["address"][i] !== "") {
+                addresses[i] = data["address"][i];
+            }
+        }
+        let counter = 0;
+        let container = $("#container");
+        let tabMenu = $("#tabMenu");
+        for (let i in addresses) {
+            if (addresses.hasOwnProperty(i) && addresses[i] !== "") {
+                tabMenu.append([
+                    '<a class="', counter === 0 ? "active " : "", 'item" data-tab="', i, '">', i.toUpperCase(), '</a>'
+                ].join(''));
+                container.append([
+                    '<div class="ui ', counter === 0 ? "active " : "", 'transition fade in tab segment" data-tab="',
+                    i, '" id="', i, '">',
+                    '</div>'
+                ].join(''));
+                counter++
+            }
+        }
+    }).fail((data) => {
+        console.log("You don't have a env.json");
+    });
+    function updateData(exchange) {
+        for (let i in addresses) {
+            if (addresses.hasOwnProperty(i)) {
+                $.ajax({
+                    url: "https://api.nanopool.org/v1/" + i + "/user/" + addresses[i],
+                    method: "GET",
+                }).done((data) => {
+                    let target = $("#" + i);
+                    target.empty();
+                    if (data["status"] === true) {
+                        target.append([
+                            '<h2 class="ui center aligned header">狀態</h2>',
+                            '<div class="ui four small statistics">',
+                            '<div class="ui statistic">',
+                            '<div class="label">當前總計算速度</div>',
+                            '<div class="value">', data["data"]["hashrate"] + " MH/s", '</div>',
+                            '</div>',
+                            '<div class="ui statistic">',
+                            '<div class="label">平均總計算速度(3hr)</div>',
+                            '<div class="value">', data["data"]["avgHashrate"]["h3"] + " MH/s", '</div>',
+                            '</div>',
+                            '<div class="ui statistic">',
+                            '<div class="label">總餘額</div>',
+                            '<div class="value">', data["data"]["balance"] + " " + i.toUpperCase(), '</div>',
+                            '</div>',
+                            '<div class="ui statistic">',
+                            '<div class="label">未驗證總餘額</div>',
+                            '<div class="value">', data["data"]["unconfirmed_balance"] + " " + i.toUpperCase(), '</div>',
+                            '</div>',
+                            '</div>',
+                            '<h2 class="ui center aligned header">工人</h2>',
+                            '<table id="' + i + '-worker" class="ui celled structured table">',
+                            '<thead><tr><th colspan="2">ID</th><th>Last Share</th><th>Shares</th><th>Hashrate</th><th>Avg. Hashrate</th></tr></thead>',
+                            '<tbody></tbody>',
+                            '</table>'
                         ].join(''));
-                        container.append([
-                            '<div class="ui ', counter === 0 ? "active " : "", 'transition fade in tab segment" data-tab="',
-                            i, '" id="', i, '">',
-                            '</div>'
-                        ].join(''));
-                        counter++
-                    }
-                }
-            }).fail((data) => {
-                console.log("You don't have a env.json");
-            });
-            function updateData(exchange) {
-                for (let i in apis) {
-                    if (apis.hasOwnProperty(i)) {
-//                        console.log(i, apis[i], addresses[i]);
-                        $.ajax({
-                            url: apis[i],
-                            method: "GET",
-                        }).done((data) => {
-                            let target = $("#" + i);
-                            target.empty();
-                            if (data["status"] === true) {
-                                target.append([
-                                    '<h2 class="ui center aligned header">狀態</h2>',
-                                    '<div class="ui four small statistics">',
-                                    '<div class="ui statistic">',
-                                    '<div class="label">當前總計算速度</div>',
-                                    '<div class="value">', data["data"]["hashrate"] + " MH/s", '</div>',
-                                    '</div>',
-                                    '<div class="ui statistic">',
-                                    '<div class="label">平均總計算速度(3hr)</div>',
-                                    '<div class="value">', data["data"]["avgHashrate"]["h3"] + " MH/s", '</div>',
-                                    '</div>',
-                                    '<div class="ui statistic">',
-                                    '<div class="label">總餘額</div>',
-                                    '<div class="value">', data["data"]["balance"] + " " + i.toUpperCase(), '</div>',
-                                    '</div>',
-                                    '<div class="ui statistic">',
-                                    '<div class="label">未驗證總餘額</div>',
-                                    '<div class="value">', data["data"]["unconfirmed_balance"] + " " + i.toUpperCase(), '</div>',
-                                    '</div>',
-                                    '</div>',
-                                    '<h2 class="ui center aligned header">工人</h2>',
-                                    '<table id="' + i + '-worker" class="ui celled structured table">',
-                                    '<thead><tr><th colspan="2">ID</th><th>Last Share</th><th>Hashrate</th><th>Avg. Hashrate</th></tr></thead>',
-                                    '<tbody></tbody>',
-                                    '</table>'
-                                ].join(''));
-                                let workers = data["data"]["workers"];
-                                let table = $("#" + i + "-worker  > tbody");
-                                let counter = 1;
-                                for (let i in workers) {
-                                    if (workers.hasOwnProperty(i)) {
-                                        table.append([
-                                            '<tr>',
-                                            '<td>' + counter + '</td>',
-                                            '<td>' + workers[i]["id"] + '</td>',
-                                            '<td>' + new Date(workers[i]["lastShare"]*1000).toLocaleString() + '</td>',
-                                            '<td>' + workers[i]["hashrate"] + '</td>',
-                                            '<td>' + workers[i]["avg_h3"] + '</td>',
-                                            '</tr>'
-                                        ].join(''));
-                                        counter++;
+                        let workers = data["data"]["workers"];
+                        let table = $("#" + i + "-worker  > tbody");
+                        let counter = 1;
+                        for (let j in workers) {
+                            let rating = 0;
+                            $.ajax({
+                                url: "https://api.nanopool.org/v1/" + i + "/shareratehistory/" + addresses[i] + "/" + workers[j]["id"],
+                                method: "GET"
+                            }).done((data) => {
+                                let result = data["data"];
+                                for (let k in result) {
+                                    if (result.hasOwnProperty(k)) {
+//                                        console.log(rating);
+                                        rating += parseInt(result[k]["shares"]);
                                     }
                                 }
-                                $.ajax({
-                                    url: "https://api.nanopool.org/v1/"+i+"/approximated_earnings/"+data["data"]["avgHashrate"]["h3"],
-                                    method: "GET"
-                                }).done((calc)=>{
-                                    target.append([
-                                        '<h2 class="ui center aligned header">預計收益</h2>',
-                                        '<table id="' + i + '-calc" class="ui celled structured table">',
-                                        '<thead><tr><th>Time</th><th>'+i.toUpperCase()+'</th><th>BTC</th><th>USD</th><th>TWD (1USD = 30TWD)</th></tr></thead>',
-                                        '<tbody></tbody>',
-                                        '</table>'
+                                if (workers.hasOwnProperty(j)) {
+                                    table.append([
+                                        '<tr>',
+                                        '<td>' + counter + '</td>',
+                                        '<td>' + workers[j]["id"] + '</td>',
+                                        '<td>' + new Date(workers[j]["lastShare"] * 1000).toLocaleString() + '</td>',
+                                        '<td>' + rating + '</td>',
+                                        '<td>' + workers[j]["hashrate"] + '</td>',
+                                        '<td>' + workers[j]["avg_h3"] + '</td>',
+                                        '</tr>'
                                     ].join(''));
-                                    table = $("#" + i + "-calc  > tbody");
-                                    for (let i in calc["data"]) {
-                                        if (calc["data"].hasOwnProperty(i)) {
-                                            table.append([
-                                                '<tr>',
-                                                '<td>' + i + '</td>',
-                                                '<td>' + calc["data"][i]["coins"] + '</td>',
-                                                '<td>' + calc["data"][i]["bitcoins"] + '</td>',
-                                                '<td>' + calc["data"][i]["dollars"] + '</td>',
-                                                '<td>' + parseFloat(calc["data"][i]["dollars"]) * parseFloat(exchange) + '</td>',
-                                                '</tr>'
-                                            ].join(''));
-                                        }
-                                    }
-                                });
-                            } else {
+                                    counter++;
+                                }
+                            });
+                        }
 
+                        $.ajax({
+                            url: "https://api.nanopool.org/v1/" + i + "/approximated_earnings/" + data["data"]["avgHashrate"]["h3"],
+                            method: "GET"
+                        }).done((calc) => {
+                            target.append([
+                                '<h2 class="ui center aligned header">預計收益</h2>',
+                                '<table id="' + i + '-calc" class="ui celled structured table">',
+                                '<thead><tr><th>Time</th><th>' + i.toUpperCase() + '</th><th>BTC</th><th>USD</th><th>TWD (1USD = '+exchange+'TWD)</th></tr></thead>',
+                                '<tbody></tbody>',
+                                '</table>'
+                            ].join(''));
+                            let table2 = $("#" + i + "-calc  > tbody");
+                            for (let i in calc["data"]) {
+                                if (calc["data"].hasOwnProperty(i)) {
+                                    table2.append([
+                                        '<tr>',
+                                        '<td>' + i + '</td>',
+                                        '<td>' + calc["data"][i]["coins"] + '</td>',
+                                        '<td>' + calc["data"][i]["bitcoins"] + '</td>',
+                                        '<td>' + calc["data"][i]["dollars"] + '</td>',
+                                        '<td>' + parseFloat(calc["data"][i]["dollars"]) * parseFloat(exchange) + '</td>',
+                                        '</tr>'
+                                    ].join(''));
+                                }
                             }
-                        }).fail((data) => {
-                            let target = $("#" + i);
-                            target.append('Error')
                         });
+
+                    } else {
+
                     }
-                }
+                }).fail((data) => {
+                    let target = $("#" + i);
+                    target.append('Error')
+                });
             }
-            $(document).ready(() => {
-                $('#tabMenu').find('.item').tab();
-                let exchange = 30;
-                updateData(exchange);
-                setInterval(function () {
-                    updateData(exchange);
-                }, 30000);
-            });
-        </script>
-    </body>
+        }
+    }
+    $(document).ready(() => {
+        $('#tabMenu').find('.item').tab();
+        let exchange = 30;
+        updateData(exchange);
+        setInterval(function () {
+            updateData(exchange);
+        }, 30000);
+    });
+</script>
+</body>
 </html>
