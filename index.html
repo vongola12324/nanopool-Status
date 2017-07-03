@@ -20,7 +20,6 @@
 <script>
     let addresses = [];
     let env = $.getJSON("env.json", function (data) {
-        console.log("Loading")
     }).done((data) => {
         for (let i in data["address"]) {
             if (data["address"].hasOwnProperty(i) && data["address"][i] !== "") {
@@ -55,10 +54,19 @@
                 }).done((data) => {
                     let target = $("#" + i);
                     target.empty();
+                    target.append([
+                      '<div class="ui positive icon message">',
+                      '<i class="hashtag icon"></i>',
+                      '<div class="content">',
+                      '<div class="header">Your address is</div>',
+                      '<p>' + addresses[i] + '</p>',
+                      '</div></div>'
+                    ].join(''));
+                    // TODO: 修正已支付金額
                     if (data["status"] === true) {
                         target.append([
-                            '<h2 class="ui center aligned header">狀態</h2>',
-                            '<div class="ui four small statistics">',
+                            '<h2 class="ui center aligned header">計算速度</h2>',
+                            '<div class="ui three small statistics">',
                             '<div class="ui statistic">',
                             '<div class="label">當前總計算速度</div>',
                             '<div class="value">', data["data"]["hashrate"] + " MH/s", '</div>',
@@ -68,12 +76,23 @@
                             '<div class="value">', data["data"]["avgHashrate"]["h3"] + " MH/s", '</div>',
                             '</div>',
                             '<div class="ui statistic">',
+                            '<div class="label">平均總計算速度(6hr)</div>',
+                            '<div class="value">', data["data"]["avgHashrate"]["h6"] + " MH/s", '</div>',
+                            '</div>',
+                            '</div>',
+                            '<h2 class="ui center aligned header">餘額</h2>',
+                            '<div class="ui three small statistics">',
+                            '<div class="ui statistic">',
                             '<div class="label">總餘額</div>',
                             '<div class="value">', data["data"]["balance"] + " " + i.toUpperCase(), '</div>',
                             '</div>',
                             '<div class="ui statistic">',
                             '<div class="label">未驗證總餘額</div>',
                             '<div class="value">', data["data"]["unconfirmed_balance"] + " " + i.toUpperCase(), '</div>',
+                            '</div>',
+                            '<div class="ui statistic">',
+                            '<div class="label">已支付金額</div>',
+                            '<div class="value">0.00', " " + i.toUpperCase(), '</div>',
                             '</div>',
                             '</div>',
                             '<h2 class="ui center aligned header">工人</h2>',
@@ -106,7 +125,7 @@
                                         '<td>' + new Date(workers[j]["lastShare"] * 1000).toLocaleString() + '</td>',
                                         '<td>' + rating + '</td>',
                                         '<td>' + workers[j]["hashrate"] + '</td>',
-                                        '<td>' + workers[j]["avg_h3"] + '</td>',
+                                        workers[j].hasOwnProperty("avg_h3")?('<td>' + workers[j]["avg_h3"] + '</td>'):('<td>0</td>'),
                                         '</tr>'
                                     ].join(''));
                                     counter++;
@@ -142,7 +161,14 @@
                         });
 
                     } else {
-
+                          target.append([
+                            '<div class="ui center aligned error icon message">',
+                            '<i class="remove icon"></i>',
+                            '<div class="content">',
+                            '<div class="header">' + data["error"] + '</div>',
+                            '<p>Try again later...</p>',
+                            '</div></div>'
+                          ].join(''));
                     }
                 }).fail((data) => {
                     let target = $("#" + i);
